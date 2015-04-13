@@ -10,6 +10,27 @@ describe("Markdown.Extra", function() {
   var codeBlockInLi = "- list item\n\n    ```\n    foo=$bar;\n    ```";
   var codeBlockInLiHtml = "<ul>\n<li><p>list item</p>\n\n<pre><code>foo=$bar;</code></pre></li>\n</ul>";
 
+  var codeBlockHTML5Renderer = function(codeblock, language) {
+    // adhere to specified options
+    var codeclass = '';
+    if (language) {
+      // Use HTML5 language- class names.
+      codeclass = ' class="language-' + language + '"';
+    }
+
+    return '<pre><code' + codeclass + '>' + codeblock + '</code></pre>';
+  };
+  var codeBlockPrettyPrintRenderer = function(codeblock, language) {
+    // adhere to specified options
+    var codeclass = '';
+    if (language) {
+      // Use HTML5 language- class names.
+      codeclass = ' class="language-' + language + '"';
+    }
+
+    return '<pre class="prettyprint"><code' + codeclass + '>' + codeblock + '</code></pre>';
+  };
+
   // basic table
   var table = "h1 | h2 | h3\n:- | :-: | -:\n1 | 2 | 3";
   var tableWithRefLinks = "h1 | [link1][1] | h3\n:- | :-: | -:\n1 | [link2][2] | 3\n\n  [1]: http://link1.com\n  [2]: http://link2.com";
@@ -205,13 +226,13 @@ describe("Markdown.Extra", function() {
     });
 
     it("should format code for highlight.js if specified", function() {
-      Markdown.Extra.init(converter, {highlighter: "highlight"});
+      Markdown.Extra.init(converter, {blockRenderer: codeBlockHTML5Renderer});
       var html = converter.makeHtml(codeBlock);
       expect(html).toMatch(/<pre><code class="language-foolang">/);
     });
 
     it("should format code for prettify if specified", function() {
-      Markdown.Extra.init(converter, {highlighter: "prettify"});
+      Markdown.Extra.init(converter, {blockRenderer: codeBlockPrettyPrintRenderer});
       var html = converter.makeHtml(codeBlock);
       expect(html).toMatch(/<pre class="prettyprint"><code class="language-foolang">/);
     });

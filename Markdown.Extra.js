@@ -153,8 +153,20 @@
     this.attributeBlocks = false;
 
     // Fenced code block options
-    this.googleCodePrettify = false;
-    this.highlightJs = false;
+    this.blockRenderer = function(block, language) {
+      block = block.replace(/&/g, "&amp;");
+      block = block.replace(/</g, "&lt;");
+      block = block.replace(/>/g, "&gt;");
+
+      // adhere to specified options
+      var attributes = '';
+      if (language) {
+        // Use HTML5 language- class names.
+        attributes = ' class="' + language + '"';
+      }
+
+      return '<pre><code' + attributes + '>' + block + '</code></pre>';
+    };
 
     // Table options
     this.tableClass = '';
@@ -238,9 +250,8 @@
       return text;
     });
 
-    if ("highlighter" in options) {
-      extra.googleCodePrettify = options.highlighter === 'prettify';
-      extra.highlightJs = options.highlighter === 'highlight';
+    if ("blockRenderer" in options) {
+      extra.blockRenderer = options.blockRenderer;
     }
 
     if ("table_class" in options) {
@@ -573,36 +584,19 @@
   // Find and convert gfm-inspired fenced code blocks into html.
   Markdown.Extra.prototype.fencedCodeBlocks = function(text) {
     function encodeCode(code) {
-      code = code.replace(/&/g, "&amp;");
-      code = code.replace(/</g, "&lt;");
-      code = code.replace(/>/g, "&gt;");
-      // These were escaped by PageDown before postNormalization 
+      // These were escaped by PageDown before postNormalization
       code = code.replace(/~D/g, "$$");
       code = code.replace(/~T/g, "~");
       return code;
     }
 
     var self = this;
-    text = text.replace(/(?:^|\n)```([^`\n]*)\n([\s\S]*?)\n```[ \t]*(?=\n)/g, function(match, m1, m2) {
-      var language = trim(m1), codeblock = m2;
-
-      // adhere to specified options
-      var preclass = self.googleCodePrettify ? ' class="prettyprint"' : '';
-      var codeclass = '';
-      if (language) {
-        if (self.googleCodePrettify || self.highlightJs) {
-          // use html5 language- class names. supported by both prettify and highlight.js
-          codeclass = ' class="language-' + language + '"';
-        } else {
-          codeclass = ' class="' + language + '"';
-        }
-      }
-
-      var html = ['<pre', preclass, '><code', codeclass, '>',
-                  encodeCode(codeblock), '</code></pre>'].join('');
+    text = text.replace(/(?:^|\n)((?:`|~T){3,})[ \t]*(\S*)[ \t]*\n([\s\S]*?)\n\1[ \t]*(?=\n)/g, function(match, m1, m2, m3) {
+      var language = m2.replace(/\s*{lang="(.*)"}/g, '$1'),
+          codeblock = encodeCode(m3);
 
       // replace codeblock with placeholder until postConversion step
-      return self.hashExtraBlock(html);
+      return self.hashExtraBlock(self.blockRenderer(codeblock, language));
     });
 
     return text;
