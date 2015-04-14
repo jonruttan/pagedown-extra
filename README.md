@@ -91,21 +91,31 @@ Will be transformed into:
 </pre>
 ```
 
-You can specify a syntax highlighter in the options object passed to `Markdown.Extra.init`,
-in order to generated html compatible with either [google-code-prettify][4]
-or [Highlight.js][5]:
+You can add syntax highlighting or perform other post-processing on a code block by
+specifying a custom `blockRenderer` function in the options object passed to
+`Markdown.Extra.init`:
 
 ```javascript
-// highlighter can be either `prettify` or `highlight`
-Markdown.Extra.init(converter, {highlighter: "prettify"});
+function hljsRenderer(text, language) {
+
+  if (language !== undefined) {
+    try {
+      hljs.highlight(language, text, true);
+    }
+    catch(e) {
+      hljs.highlightAuto(text);
+    }
+  } else {
+    hljs.highlightAuto(text);
+  }
+
+  return '<pre class="hljs"><code class="language-' + hl.language + '">' + hl.value.replace(/&amp;/g, '&') + '</code></pre>';
+};
+
+Markdown.Extra.init(converter, { blockRenderer: hljsRenderer });
 ```
 
-If either of those is specified, the language type will be added to the code tag, e.g.
-`<code class="language-javascript">`, otherwise you just get the standard
-`<code class="javascript">` as in PHP Markdown Extra. If `prettify` is specified,
-`<pre>` also becomes `<pre class="prettyprint">`. Otherwise, the markup is the
-same as what Pagedown produces for regular indented code blocks.  For example, when using
-`{highlighter: "prettify"}` as shown above, this:
+Which when given:
 
     ```javascript
     var x = 2;
@@ -114,7 +124,7 @@ same as what Pagedown produces for regular indented code blocks.  For example, w
 Would generate the following html:
 
 ```html
-<pre class="prettyprint">
+<pre class="hljs">
     <code class="language-javascript">var x = 2;</code>
 </pre>
 ```
